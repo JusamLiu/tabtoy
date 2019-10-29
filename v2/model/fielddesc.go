@@ -203,11 +203,11 @@ func (self *FieldDescriptor) ParseType(fileD *FileDescriptor, rawstr string) boo
 
 		puretype = rawstr[RepeatedKeywordLen+1:]
 
-		self.IsRepeated = true
+		self.IsRepeated = false
 	} else if strings.HasPrefix(rawstr, SliceKeyword) {
 		puretype = rawstr[SliceKeywordLen:]
 
-		self.IsRepeated = true
+		self.IsRepeated = false
 	} else {
 		puretype = rawstr
 	}
