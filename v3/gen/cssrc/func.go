@@ -3,7 +3,7 @@ package cssrc
 import (
 	"fmt"
 	"github.com/davyxu/tabtoy/util"
-	"github.com/davyxu/tabtoy/v3/gen/binpak"
+	"github.com/davyxu/tabtoy/v3/gen/bindata"
 	"github.com/davyxu/tabtoy/v3/model"
 	"text/template"
 )
@@ -13,18 +13,25 @@ var UsefulFunc = template.FuncMap{}
 func wrapSingleValue(globals *model.Globals, valueType *model.TypeDefine, value string) string {
 	switch {
 	case valueType.FieldType == "string": // 字符串
-		return util.StringEscape(value)
-	case valueType.FieldType == "float32":
-		return value
+
+		// C#特殊优化
+		if value == "" {
+			return "string.Empty"
+		}
+
+		return util.StringWrap(util.StringEscape(value))
 	case globals.Types.IsEnumKind(valueType.FieldType): // 枚举
-		return globals.Types.ResolveEnumValue(valueType.FieldType, value)
+		t := globals.Types.ResolveEnum(valueType.FieldType, value)
+		if t != nil {
+			return t.Define.ObjectType + "." + t.Define.FieldName
+		}
+
+		return ""
 	case valueType.FieldType == "bool":
 
-		switch value {
-		case "是", "yes", "YES", "1", "true", "TRUE", "True":
+		v, _ := model.ParseBool(value)
+		if v {
 			return "true"
-		case "否", "no", "NO", "0", "false", "FALSE", "False":
-			return "false"
 		}
 
 		return "false"
@@ -51,9 +58,14 @@ func init() {
 
 	UsefulFunc["CSTag"] = func(globals *model.Globals, fieldIndex int, tf *model.TypeDefine) string {
 
-		tag := binpak.MakeTag(globals, tf, fieldIndex)
+		tag := bindata.MakeTag(globals, tf, fieldIndex)
 
 		return fmt.Sprintf("0x%x", tag)
+	}
+
+	UsefulFunc["CSStructTag"] = func() string {
+
+		return fmt.Sprintf("0x%x", bindata.MakeTagStructArray())
 	}
 
 	UsefulFunc["CSReader"] = func(globals *model.Globals, tf *model.TypeDefine) (ret string) {
@@ -63,6 +75,8 @@ func init() {
 		switch {
 		case convertedType == "float":
 			ret = "Float"
+		case convertedType == "double":
+			ret = "Double"
 		case convertedType == "string":
 			ret = "String"
 		case convertedType == "bool":
@@ -86,7 +100,14 @@ func init() {
 			return wrapSingleValue(globals, tf, "")
 		}
 
-		return convertedType
+	}
+
+	UsefulFunc["IsWarpFieldName"] = func(globals *model.Globals, tf *model.TypeDefine) bool {
+
+		if globals.CanDoAction(model.ActionNoGennFieldCsharp, tf) {
+			return false
+		}
+		return true
 	}
 
 }

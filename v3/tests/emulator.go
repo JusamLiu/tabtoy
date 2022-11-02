@@ -5,7 +5,7 @@ import (
 	"github.com/davyxu/tabtoy/v3/compiler"
 	"github.com/davyxu/tabtoy/v3/gen"
 	"github.com/davyxu/tabtoy/v3/gen/gosrc"
-	"github.com/davyxu/tabtoy/v3/gen/jsontext"
+	"github.com/davyxu/tabtoy/v3/gen/jsondata"
 	"github.com/davyxu/tabtoy/v3/helper"
 	"github.com/davyxu/tabtoy/v3/model"
 	"io/ioutil"
@@ -76,7 +76,7 @@ func (self *TableEmulator) VerifyType(expectJson string) {
 		return
 	}
 
-	appJson := self.G.Types.ToJSON(false)
+	appJson := self.G.Types.ToJSON()
 
 	if expectJson == "" {
 		return
@@ -116,7 +116,7 @@ func (self *TableEmulator) VerifyData(expectJson string) {
 	}
 
 	var appJson []byte
-	appJson, err = jsontext.Generate(self.G)
+	appJson, err = jsondata.Generate(self.G)
 
 	if err != nil {
 		return
@@ -162,7 +162,7 @@ func (self *TableEmulator) VerifyGoTypeAndJson(expectJson string) {
 
 	configFileName := filepath.Join(dir, "config.json")
 
-	if err = genFile(self.G, configFileName, jsontext.Generate); err != nil {
+	if err = genFile(self.G, configFileName, jsondata.Generate); err != nil {
 		return
 	}
 
@@ -192,7 +192,7 @@ func (self *TableEmulator) VerifyGoTypeAndJson(expectJson string) {
 	}
 }
 
-func genFile(globals *model.Globals, filename string, genFunc gen.GenFunc) error {
+func genFile(globals *model.Globals, filename string, genFunc gen.GenSingleFile) error {
 
 	data, err := genFunc(globals)
 

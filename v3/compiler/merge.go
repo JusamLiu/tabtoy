@@ -102,7 +102,7 @@ func MergeData(inputList, outputList *model.DataTableList, symbols *model.TypeTa
 
 				if inputHeader.TypeInfo.IsArray() {
 
-					combineArrayCell(outputCell, inputCell, inputHeader.TypeInfo.ArraySplitter)
+					combineRepeatedCell(outputCell, inputCell, inputHeader, inputTab)
 
 				} else {
 					outputCell.CopyFrom(inputCell)
@@ -113,40 +113,22 @@ func MergeData(inputList, outputList *model.DataTableList, symbols *model.TypeTa
 	}
 }
 
-func combineArrayCell(ouputCell, inputCell *model.Cell, splitter string) {
+func combineRepeatedCell(outputCell, inputCell *model.Cell, inputHeader *model.HeaderField, inputTab *model.DataTable) {
 
-	var sb strings.Builder
+	// 数组列, 单列情况
+	if inputTab.ArrayFieldCount(inputHeader) == 1 {
 
-	var valueCount int
-
-	tail := ouputCell
-
-	// 把之前的格子的值合并为字符串
-	for c := ouputCell.Next; c != nil; c = c.Next {
-
-		tail = c
-
-		if valueCount > 0 {
-			sb.WriteString(splitter)
+		// 不为空时, 切割值为数组
+		if inputCell.Value != "" {
+			for _, element := range strings.Split(inputCell.Value, inputHeader.TypeInfo.ArraySplitter) {
+				outputCell.ValueList = append(outputCell.ValueList, element)
+			}
 		}
 
-		sb.WriteString(c.Value)
-		valueCount++
+	} else {
+
+		// 数组列, 多列情况, 每列添加到单元格
+		outputCell.ValueList = append(outputCell.ValueList, inputCell.Value)
 	}
-
-	for _, value := range strings.Split(inputCell.Value, splitter) {
-
-		if valueCount > 0 {
-			sb.WriteString(splitter)
-		}
-
-		sb.WriteString(value)
-		valueCount++
-	}
-
-	ouputCell.Value = sb.String()
-
-	tail.Next = &model.Cell{}
-	tail.Next.CopyFrom(inputCell)
 
 }
